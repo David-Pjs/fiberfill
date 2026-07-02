@@ -1,0 +1,17 @@
+{
+  "name": "fiberfill",
+  "version": "0.1.0",
+  "private": false,
+  "license": "MIT",
+  "type": "module",
+  "description": "On-demand inbound liquidity (LSP) toolkit for CKB Fiber Network.",
+  "scripts": {
+    "smoke": "tsx src/smoke.ts",
+    "request": "tsx src/request-demo.ts"
+  },
+  "devDependencies": {
+    "tsx": "^4.19.2",
+    "typescript": "^5.7.2",
+    "@types/node": "^22.10.2"
+  }
+}
