@@ -1,4 +1,4 @@
-import { FiberRpc, shannonsToCkb } from "./rpc";
+import { FiberRpc, shannonsToCkb, toCkb } from "./rpc";
 
 export interface LiquidityRequest {
   pubkey: string;
@@ -54,4 +54,29 @@ export async function requestLiquidity(
     }
   }
   throw new Error("requestLiquidity: channel did not reach ChannelReady before timeout");
+}
+
+export interface CanReceiveResult {
+  ok: boolean;
+  inbound: number;
+  needed: number;
+  shortfall: number;
+  reason: string;
+}
+
+export async function canReceive(rpc: FiberRpc, amount: bigint): Promise<CanReceiveResult> {
+  const { channels } = await rpc.listChannels();
+  const usable = channels.filter((c) => c.enabled && c.state.state_name === READY);
+  const inbound = usable.reduce((sum, c) => sum + BigInt(c.remote_balance), 0n);
+  const ok = inbound >= amount;
+  const shortfall = ok ? 0n : amount - inbound;
+  return {
+    ok,
+    inbound: toCkb(inbound),
+    needed: toCkb(amount),
+    shortfall: toCkb(shortfall),
+    reason: ok
+      ? `has ${toCkb(inbound)} CKB inbound across ${usable.length} channel(s)`
+      : `short ${toCkb(shortfall)} CKB (has ${toCkb(inbound)}, wants ${toCkb(amount)})`,
+  };
 }

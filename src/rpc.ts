@@ -9,9 +9,10 @@ export interface NodeInfo {
 
 export interface Channel {
   channel_id: string;
-  peer_id: string;
+  pubkey: string;
   state: { state_name: string };
   local_balance: Hex;
+  remote_balance: Hex;
   enabled: boolean;
 }
 
@@ -34,6 +35,7 @@ interface JsonRpcResponse<T> {
 
 export const CKB = 100_000_000n;
 export const toHex = (n: bigint): Hex => `0x${n.toString(16)}`;
+export const toCkb = (n: bigint): number => Number(n) / Number(CKB);
 export const shannonsToCkb = (h: string): number => Number(BigInt(h)) / Number(CKB);
 export const ckb = (n: number): bigint => BigInt(n) * CKB;
 
