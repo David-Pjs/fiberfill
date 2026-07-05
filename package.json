@@ -8,7 +8,8 @@
   "scripts": {
     "smoke": "tsx src/smoke.ts",
     "request": "tsx src/request-demo.ts",
-    "canreceive": "tsx src/canreceive-demo.ts"
+    "canreceive": "tsx src/canreceive-demo.ts",
+    "providers": "tsx src/providers-demo.ts"
   },
   "devDependencies": {
     "tsx": "^4.19.2",

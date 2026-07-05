@@ -1,0 +1,9 @@
+[
+  {
+    "label": "fiber-lab provider",
+    "pubkey": "02a37e376a62296c2fafeb08361a0e02b7c1c13c01d3db62dac0be78a729c09c18",
+    "address": "/ip4/127.0.0.1/tcp/8338/p2p/QmajE6VbJR7XY4bwKuGykmDjkWBR6KuSbhok9fcFsUF6p7",
+    "rpcUrl": "http://127.0.0.1:8337",
+    "maxOfferCkb": 500
+  }
+]
