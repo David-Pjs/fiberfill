@@ -1,10 +1,17 @@
 export type Hex = `0x${string}`;
 
+export interface Script {
+  code_hash: string;
+  hash_type: string;
+  args: string;
+}
+
 export interface NodeInfo {
   node_name?: string;
   node_id?: string;
   peers_count: Hex;
   channel_count: Hex;
+  default_funding_lock_script?: Script;
 }
 
 export interface Channel {
@@ -85,5 +92,13 @@ export class FiberRpc {
 
   getPayment(paymentHash: string): Promise<PaymentResult> {
     return this.call("get_payment", [{ payment_hash: paymentHash }]);
+  }
+
+  // Cooperatively closes a channel, sending the local balance on-chain to
+  // closeScript. Used by the demo reset to return the fresh node to zero inbound.
+  shutdownChannel(channelId: string, closeScript: Script, feeRate: bigint): Promise<null> {
+    return this.call("shutdown_channel", [
+      { channel_id: channelId, close_script: closeScript, fee_rate: toHex(feeRate) },
+    ]);
   }
 }

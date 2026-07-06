@@ -10,11 +10,22 @@
     "request": "tsx src/request-demo.ts",
     "canreceive": "tsx src/canreceive-demo.ts",
     "providers": "tsx src/providers-demo.ts",
-    "harden": "tsx src/harden.ts"
+    "harden": "tsx src/harden.ts",
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start"
   },
   "devDependencies": {
+    "@types/node": "^22.10.2",
+    "@types/react": "^19.2.17",
+    "@types/react-dom": "^19.2.3",
+    "puppeteer-core": "^23.11.1",
     "tsx": "^4.19.2",
-    "typescript": "^5.7.2",
-    "@types/node": "^22.10.2"
+    "typescript": "^5.7.2"
+  },
+  "dependencies": {
+    "next": "^15.5.20",
+    "react": "^19.2.7",
+    "react-dom": "^19.2.7"
   }
 }
