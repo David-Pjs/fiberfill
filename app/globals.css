@@ -256,18 +256,72 @@ button:disabled {
   font-family: var(--font-technical);
 }
 
-/* Provider + footer */
-.provider {
+/* Provider operator view */
+.op-figure {
   display: flex;
   align-items: baseline;
-  justify-content: space-between;
-  gap: 1rem;
-  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-top: 1rem;
+}
+.op-num {
+  font-family: var(--font-technical);
+  font-weight: 500;
+  font-size: clamp(1.75rem, 1.3rem + 2vw, 2.5rem);
+  letter-spacing: -0.01em;
+  font-variant-numeric: tabular-nums;
+  color: var(--ink);
+}
+.op-unit {
+  font-size: 0.8rem;
+  color: var(--ink-faint);
+}
+.op-meta {
   color: var(--ink-soft);
   font-size: 0.85rem;
+  margin-top: 0.5rem;
 }
-.provider .name {
+
+.fund {
+  margin-top: 1.6rem;
+  background: var(--paper-sunk);
+  border: 1px solid var(--rule);
+  padding: 1.1rem 1.2rem;
+}
+.fund-label {
+  font-size: 0.7rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--ink-faint);
+}
+.fund-row {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-top: 0.7rem;
+  flex-wrap: wrap;
+}
+.addr {
+  font-family: var(--font-technical);
+  font-size: 0.8rem;
   color: var(--ink);
+  word-break: break-all;
+  flex: 1;
+  min-width: 0;
+}
+
+button.small {
+  padding: 0.4rem 0.8rem;
+  font-size: 0.72rem;
+}
+
+a {
+  color: var(--accent);
+  text-decoration: none;
+  border-bottom: 1px solid transparent;
+  transition: border-color 0.2s var(--ease);
+}
+a:hover {
+  border-bottom-color: var(--accent);
 }
 
 .notice {

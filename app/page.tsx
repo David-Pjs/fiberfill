@@ -22,6 +22,18 @@ type NodeState = {
 type EventKind = "muted" | "pending" | "win" | "normal";
 type TimelineEvent = { id: string; name: string; sub?: string; time: string; kind: EventKind };
 
+type ProviderView = {
+  online: boolean;
+  label: string;
+  address: string;
+  faucet: string;
+  onchainCkb?: number | null;
+  committedInboundCkb?: number;
+  openChannels?: number;
+  maxOfferCkb?: number | null;
+  error?: string;
+};
+
 const secs = (ms: number): string => `${(ms / 1000).toFixed(1)}s`;
 
 export default function Page() {
@@ -32,6 +44,8 @@ export default function Page() {
   const [phase, setPhase] = useState<"idle" | "running" | "done" | "error">("idle");
   const [display, setDisplay] = useState(0);
   const [landed, setLanded] = useState(false);
+  const [pv, setPv] = useState<ProviderView | null>(null);
+  const [copied, setCopied] = useState(false);
   const rafRef = useRef<number | null>(null);
 
   const loadState = useCallback(async () => {
@@ -44,9 +58,26 @@ export default function Page() {
     }
   }, [running]);
 
+  const loadProvider = useCallback(async () => {
+    const res = await fetch("/api/provider", { cache: "no-store" });
+    setPv((await res.json()) as ProviderView);
+  }, []);
+
   useEffect(() => {
     loadState();
-  }, [loadState]);
+    loadProvider();
+  }, [loadState, loadProvider]);
+
+  const copyAddress = useCallback(async () => {
+    if (!pv) return;
+    try {
+      await navigator.clipboard.writeText(pv.address);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1500);
+    } catch {
+      setCopied(false);
+    }
+  }, [pv]);
 
   const countTo = useCallback((target: number) => {
     if (rafRef.current) cancelAnimationFrame(rafRef.current);
@@ -102,6 +133,7 @@ export default function Page() {
         setRunning(false);
         setPhase("done");
         loadState();
+        loadProvider();
       } else if (phaseName === "error") {
         es.close();
         setRunning(false);
@@ -114,7 +146,7 @@ export default function Page() {
       setRunning(false);
       setPhase((p) => (p === "done" ? p : "error"));
     };
-  }, [countTo, loadState]);
+  }, [countTo, loadState, loadProvider]);
 
   const push = (ev: TimelineEvent): void =>
     setEvents((prev) => (prev.some((p) => p.id === ev.id) ? prev : [...prev, ev]));
@@ -139,8 +171,9 @@ export default function Page() {
       }
     } finally {
       setResetting(false);
+      loadProvider();
     }
-  }, []);
+  }, [loadProvider]);
 
   if (!node) {
     return (
@@ -150,7 +183,6 @@ export default function Page() {
     );
   }
 
-  const provider = node.providers?.[0];
   const able = node.canReceive?.ok ?? false;
   const canRunFromEmpty = node.online && !able;
 
@@ -235,17 +267,52 @@ export default function Page() {
             </p>
           </section>
 
-          {provider && (
+          {pv && (
             <>
               <hr className="rule" />
-              <p className="provider">
-                <span>
-                  Provider <span className="name">{provider.label}</span>
-                </span>
-                <span>
-                  {provider.online ? "online" : "offline"}, offers up to {provider.maxOfferCkb} CKB
-                </span>
-              </p>
+              <section className="operator">
+                <p className="eyebrow">
+                  The provider
+                  <span className="who">
+                    {pv.label}, {pv.online ? "online" : "offline"}
+                  </span>
+                </p>
+
+                {pv.online ? (
+                  <>
+                    <div className="op-figure">
+                      <span className="op-num">
+                        {pv.onchainCkb != null ? pv.onchainCkb.toLocaleString() : "unknown"}
+                      </span>
+                      <span className="op-unit">CKB on-chain</span>
+                    </div>
+                    <p className="op-meta">
+                      capacity to offer, funding {pv.committedInboundCkb} CKB of inbound across{" "}
+                      {pv.openChannels} channel(s)
+                      {pv.maxOfferCkb != null && `, offers up to ${pv.maxOfferCkb} CKB per request`}
+                    </p>
+
+                    <div className="fund">
+                      <p className="fund-label">Fund the provider</p>
+                      <div className="fund-row">
+                        <code className="addr">{pv.address}</code>
+                        <button className="ghost small" onClick={copyAddress}>
+                          {copied ? "copied" : "copy"}
+                        </button>
+                      </div>
+                      <p className="hint">
+                        Send testnet CKB to this address to raise capacity, then it updates here. No
+                        CLI, no keys held by FiberFill.{" "}
+                        <a href={pv.faucet} target="_blank" rel="noreferrer">
+                          Testnet faucet
+                        </a>
+                      </p>
+                    </div>
+                  </>
+                ) : (
+                  <div className="notice">The provider node is not reachable right now.</div>
+                )}
+              </section>
             </>
           )}
         </>
