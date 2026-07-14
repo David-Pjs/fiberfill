@@ -59,6 +59,21 @@ Requires two running `fnn` nodes on CKB testnet (a provider and a target). Full 
 setup is in [../fiber-lab/NODES.md](../fiber-lab/NODES.md); the demo run itself, with
 timing and the warm-up step, is in [DEMO.md](DEMO.md).
 
+### One command, for judges
+
+```bash
+npm install
+npm run demo        # guided empty-to-paid money-shot, live, no mocks
+npm run demo -- 200 # request a different amount (50, 100, 200)
+```
+
+`npm run demo` checks the nodes are up first (and tells you exactly how to start them
+if not), returns the node to a true zero-inbound start, then narrates the whole flow:
+cannot receive, provider funds a channel, can receive, payment lands. `npm run doctor`
+just runs the readiness check.
+
+### The rest of the toolkit
+
 ```bash
 npm install
 
