@@ -1,13 +1,21 @@
 // Single source of truth for the demo's live nodes. The dashboard is hardcoded
 // to the fresh node so the money-shot is one clean, repeatable sequence.
+//
+// The RPC URLs are what the deployed app (Vercel) calls, so they point at the
+// nodes' public host. Set PROVIDER_RPC and FRESH_RPC in the deploy environment
+// to the VPS address; they fall back to localhost for local development.
 
-export const PROVIDER_RPC = "http://127.0.0.1:8337";
-export const FRESH_RPC = "http://127.0.0.1:8357";
+export const PROVIDER_RPC = process.env.PROVIDER_RPC ?? "http://127.0.0.1:8337";
+export const FRESH_RPC = process.env.FRESH_RPC ?? "http://127.0.0.1:8357";
 
 // Public CKB testnet RPC, used read-only to report the provider's on-chain
 // balance (its capacity to fund inbound). FiberFill never signs on-chain here.
 export const CKB_RPC = "https://testnet.ckbapp.dev/";
 
+// The provider dials this address to open the channel. That dial is node-to-node
+// on the same host as the provider (both nodes are co-located on the VPS), so the
+// address stays loopback even in the hosted deployment. Only the RPC URLs above,
+// which the app calls remotely, take the public host.
 export const FRESH = {
   label: "fresh",
   pubkey: "03646eac7cf511d1bb9b84b2fb9a4cca85cf689b726e8501f5e26bed9a3328529f",

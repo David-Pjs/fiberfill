@@ -15,10 +15,14 @@ export interface LiquidityResult {
 export interface RequestOptions {
   pollMs?: number;
   timeoutMs?: number;
+  connectTimeoutMs?: number;
   onState?: (state: string) => void;
 }
 
 const READY = "ChannelReady";
+// connect_peer returns before the Fiber Init handshake finishes, and open_channel
+// rejects with this message until the peer's feature bits have been exchanged.
+const HANDSHAKE_PENDING = /Init message|feature bit not found/i;
 const sleep = (ms: number): Promise<void> => new Promise((r) => setTimeout(r, ms));
 
 export async function requestLiquidity(
@@ -28,11 +32,29 @@ export async function requestLiquidity(
 ): Promise<LiquidityResult> {
   const pollMs = opts.pollMs ?? 3000;
   const timeoutMs = opts.timeoutMs ?? 180000;
-
-  await provider.connectPeer(req.address);
+  const connectTimeoutMs = opts.connectTimeoutMs ?? 120000;
 
   const before = new Set((await provider.listChannels()).channels.map((c) => c.channel_id));
-  await provider.openChannel(req.pubkey, req.amount);
+
+  // A node with zero channels does not hold a manually opened peer connection: it
+  // handshakes, then drops the link within about a minute because no channel
+  // anchors it. open_channel needs the link live, so re-issue connect_peer on
+  // every attempt to rebuild a dropped session, then try to open in the window
+  // while it is up. A failed open here is a parameter rejection, so no channel
+  // is created to leak.
+  const connectDeadline = Date.now() + connectTimeoutMs;
+  for (;;) {
+    try {
+      await provider.connectPeer(req.address);
+      await provider.openChannel(req.pubkey, req.amount);
+      break;
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      if (!HANDSHAKE_PENDING.test(msg) || Date.now() >= connectDeadline) throw err;
+      opts.onState?.("HandshakingPeer");
+      await sleep(pollMs);
+    }
+  }
 
   const deadline = Date.now() + timeoutMs;
   let last = "";
