@@ -1,6 +1,6 @@
 import { FiberRpc, ckb, shannonsToCkb } from "@/src/rpc";
 import { requestLiquidity } from "@/src/core";
-import { PROVIDER_RPC, FRESH_RPC, FRESH, WANT_CKB, FUND_CKB } from "@/src/nodes";
+import { PROVIDER_RPC, FRESH_RPC, FRESH, resolveWant, fundFor } from "@/src/nodes";
 
 export const dynamic = "force-dynamic";
 export const runtime = "nodejs";
@@ -14,7 +14,9 @@ async function freshHeld(fresh: FiberRpc): Promise<number> {
   return ready.reduce((sum, c) => sum + shannonsToCkb(c.local_balance), 0);
 }
 
-export async function GET() {
+export async function GET(request: Request) {
+  const wantCkb = resolveWant(new URL(request.url).searchParams.get("want"));
+  const fundCkb = fundFor(wantCkb);
   const provider = new FiberRpc(PROVIDER_RPC);
   const fresh = new FiberRpc(FRESH_RPC);
   const encoder = new TextEncoder();
@@ -31,7 +33,7 @@ export async function GET() {
 
         const result = await requestLiquidity(
           provider,
-          { pubkey: FRESH.pubkey, address: FRESH.address, amount: ckb(FUND_CKB) },
+          { pubkey: FRESH.pubkey, address: FRESH.address, amount: ckb(fundCkb) },
           { onState: (state) => send({ phase: "state", state, elapsedMs: elapsed() }) },
         );
         send({
@@ -42,7 +44,7 @@ export async function GET() {
         });
 
         send({ phase: "invoice", elapsedMs: elapsed() });
-        const invoice = await fresh.newInvoice(ckb(WANT_CKB), "fiberfill dashboard");
+        const invoice = await fresh.newInvoice(ckb(wantCkb), "fiberfill dashboard");
 
         send({ phase: "paying", elapsedMs: elapsed() });
         const pay = await provider.sendPayment(invoice.invoice_address);
@@ -61,7 +63,7 @@ export async function GET() {
           phase: "paid",
           held: Math.round(heldAfter * 100) / 100,
           gained: Math.round((heldAfter - heldBefore) * 100) / 100,
-          want: WANT_CKB,
+          want: wantCkb,
           elapsedMs: elapsed(),
         });
         send({ phase: "done", elapsedMs: elapsed() });

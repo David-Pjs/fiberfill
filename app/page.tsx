@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import { WANT_PRESETS } from "@/src/nodes";
 
 type Provider = {
   label: string;
@@ -46,17 +47,18 @@ export default function Page() {
   const [landed, setLanded] = useState(false);
   const [pv, setPv] = useState<ProviderView | null>(null);
   const [copied, setCopied] = useState(false);
+  const [want, setWant] = useState<number>(WANT_PRESETS[0]);
   const rafRef = useRef<number | null>(null);
 
   const loadState = useCallback(async () => {
-    const res = await fetch("/api/state", { cache: "no-store" });
+    const res = await fetch(`/api/state?want=${want}`, { cache: "no-store" });
     const data: NodeState = await res.json();
     setNode(data);
     if (!running) {
       setDisplay(data.held ?? 0);
       setLanded(Boolean(data.canReceive?.ok));
     }
-  }, [running]);
+  }, [running, want]);
 
   const loadProvider = useCallback(async () => {
     const res = await fetch("/api/provider", { cache: "no-store" });
@@ -100,7 +102,7 @@ export default function Page() {
     setRunning(true);
     setPhase("running");
 
-    const es = new EventSource("/api/run");
+    const es = new EventSource(`/api/run?want=${want}`);
     es.onmessage = (msg) => {
       const e = JSON.parse(msg.data) as Record<string, unknown>;
       const phaseName = e.phase as string;
@@ -146,7 +148,11 @@ export default function Page() {
       setRunning(false);
       setPhase((p) => (p === "done" ? p : "error"));
     };
-  }, [countTo, loadState, loadProvider]);
+  }, [countTo, loadState, loadProvider, want]);
+
+  useEffect(() => {
+    if (!running && !resetting) loadState();
+  }, [want, running, resetting, loadState]);
 
   const push = (ev: TimelineEvent): void =>
     setEvents((prev) => (prev.some((p) => p.id === ev.id) ? prev : [...prev, ev]));
@@ -219,9 +225,24 @@ export default function Page() {
             </p>
             <p className="verdict-note">{node.canReceive?.reason}</p>
 
+            {canRunFromEmpty && !running && (
+              <div className="amounts" role="group" aria-label="Amount to request">
+                {WANT_PRESETS.map((preset) => (
+                  <button
+                    key={preset}
+                    className={`chip ${want === preset ? "on" : ""}`}
+                    onClick={() => setWant(preset)}
+                    disabled={resetting}
+                  >
+                    {preset} CKB
+                  </button>
+                ))}
+              </div>
+            )}
+
             <div className="actions">
               <button onClick={run} disabled={running || resetting || !canRunFromEmpty}>
-                {running ? "opening channel, live..." : `Request ${node.want} CKB inbound`}
+                {running ? "opening channel, live..." : `Request ${want} CKB inbound`}
               </button>
               {able && (
                 <button className="ghost" onClick={reset} disabled={running || resetting}>

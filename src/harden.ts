@@ -43,9 +43,40 @@ async function freshHeld(): Promise<number> {
   return ready.reduce((sum, c) => sum + shannonsToCkb(c.local_balance), 0);
 }
 
+// Return the fresh node to a true zero-inbound start by cooperatively closing any
+// channels a previous run left open, so this proof is repeatable rather than a
+// one-shot that fails on the second run.
+async function resetFresh(): Promise<void> {
+  const { channels } = await fresh.listChannels();
+  const ready = channels.filter((c) => c.state.state_name === "ChannelReady");
+  if (ready.length === 0) {
+    console.log("  already at zero inbound");
+    return;
+  }
+  const info = await fresh.nodeInfo();
+  const closeScript = info.default_funding_lock_script;
+  if (!closeScript) throw new Error("fresh node has no default lock script to close into");
+  for (const ch of ready) {
+    await fresh.shutdownChannel(ch.channel_id, closeScript, 1000n);
+    console.log(`  closing ${ch.channel_id.slice(0, 12)}...`);
+  }
+  const deadline = Date.now() + 60000;
+  while (Date.now() < deadline) {
+    await sleep(3000);
+    if (!(await canReceive(fresh, WANT)).ok) {
+      console.log("  fresh node is back to zero inbound");
+      return;
+    }
+  }
+  console.log("  channels still settling, proceeding anyway");
+}
+
 console.log("FiberFill hardening run - fresh zero-inbound node, live testnet, no mocks\n");
 
-console.log("1. starting state of the fresh node");
+console.log("0. resetting the fresh node to a true zero-inbound start");
+await resetFresh();
+
+console.log("\n1. starting state of the fresh node");
 const start = await canReceive(fresh, WANT);
 assert(!start.ok, `fresh node cannot receive ${toCkb(WANT)} CKB yet (${start.reason})`);
 

@@ -2,15 +2,16 @@ import { NextResponse } from "next/server";
 import { FiberRpc, ckb, shannonsToCkb } from "@/src/rpc";
 import { canReceive } from "@/src/core";
 import { listProviders } from "@/src/providers";
-import { FRESH_RPC, WANT_CKB, FRESH, shortPubkey } from "@/src/nodes";
+import { FRESH_RPC, FRESH, shortPubkey, resolveWant } from "@/src/nodes";
 
 export const dynamic = "force-dynamic";
 
-export async function GET() {
+export async function GET(request: Request) {
+  const wantCkb = resolveWant(new URL(request.url).searchParams.get("want"));
   const fresh = new FiberRpc(FRESH_RPC);
   try {
     const info = await fresh.nodeInfo();
-    const cr = await canReceive(fresh, ckb(WANT_CKB));
+    const cr = await canReceive(fresh, ckb(wantCkb));
     const { channels } = await fresh.listChannels();
     const ready = channels.filter((c) => c.state.state_name === "ChannelReady");
     const held = ready.reduce((sum, c) => sum + shannonsToCkb(c.local_balance), 0);
@@ -20,7 +21,7 @@ export async function GET() {
       pubkey: FRESH.pubkey,
       pubkeyShort: shortPubkey(FRESH.pubkey),
       channelCount: Number(BigInt(info.channel_count)),
-      want: WANT_CKB,
+      want: wantCkb,
       canReceive: cr,
       held: Math.round(held * 100) / 100,
       providers,
@@ -30,7 +31,7 @@ export async function GET() {
       online: false,
       pubkey: FRESH.pubkey,
       pubkeyShort: shortPubkey(FRESH.pubkey),
-      want: WANT_CKB,
+      want: wantCkb,
       error: err instanceof Error ? err.message : String(err),
     });
   }

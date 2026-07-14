@@ -38,4 +38,21 @@ export const PROVIDER = {
 export const WANT_CKB = 50;
 export const FUND_CKB = 300;
 
+// A judge can pick how much inbound to request, so the demo is visibly not fixed to
+// one number. The provider funds the requested amount plus a buffer that covers the
+// ~99 CKB on-chain reserve; the presets stay under the provider's 500 CKB per-request
+// cap. Requests are clamped to this safe range server-side.
+export const WANT_PRESETS = [50, 100, 200] as const;
+const MIN_WANT_CKB = 50;
+const MAX_WANT_CKB = 250;
+const FUND_BUFFER_CKB = 250;
+
+export function resolveWant(raw: string | null): number {
+  const n = raw == null ? WANT_CKB : Number(raw);
+  if (!Number.isFinite(n)) return WANT_CKB;
+  return Math.min(MAX_WANT_CKB, Math.max(MIN_WANT_CKB, Math.round(n)));
+}
+
+export const fundFor = (wantCkb: number): number => wantCkb + FUND_BUFFER_CKB;
+
 export const shortPubkey = (pk: string): string => `${pk.slice(0, 8)}...${pk.slice(-4)}`;
