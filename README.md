@@ -12,6 +12,19 @@ can be paid immediately.
 Built for the "Gone in 60ms: Fiber Network Infrastructure Hackathon", Category 3
 (Merchant, Liquidity, LSP, Multi-Asset). MIT licensed. Nothing in the demo is mocked.
 
+## What it looks like
+
+A node that cannot receive, a provider funding a channel toward it, and a real payment
+landing. One screen, live against CKB testnet.
+
+| Empty | Filling | Paid |
+|---|---|---|
+| ![A fresh node with zero inbound capacity: "Cannot receive yet", 0.00 CKB held](docs/screenshots/01-cannot-receive.png) | ![The provider opening a funded channel, with the channel state timeline advancing live](docs/screenshots/02-channel-opening.png) | ![ChannelReady with 201 CKB inbound added, and a 50 CKB payment received](docs/screenshots/03-paid.png) |
+| zero inbound, no path exists to pay this node | provider opens a funded channel toward it | `ChannelReady` +201 CKB inbound, 50 CKB received |
+
+Captured from a cold run on 15 July 2026 against live testnet nodes. `ChannelReady` at
+114.8s, payment landed at 119.4s. Those are the real observed timings, not a target.
+
 ## The gap it fills
 
 Fiber's own material points at a Liquidity Service Provider (LSP) plus submarine-swap
